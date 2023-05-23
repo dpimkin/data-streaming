@@ -14,7 +14,7 @@ To initiate the build process, simply execute the following command in your pref
 Once the build process is complete, the application can be run using the following command:
 
 ```bash
-java -jar build/libs/json-data-0.0.1-SNAPSHOT.jar 
+java -jar build/libs/dataset-app-0.0.1-SNAPSHOT.jar 
 ```
 
 ## How to invoke 
