@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: transform-app
+  main:
+    banner-mode: off
+
+client:
+  base-url: http://127.0.0.1:8081
+  buffer-size: 16384
+
+transform:
+  buffer-size: 4096
+
+server:
+  port: 8080
