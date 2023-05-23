@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: dataset-app
+  main:
+    banner-mode: off
+
+server:
+  port: 8081
+
+
+dataset-meta:
+  string-fields: foo,bar
+  double-fields: foobar
+  int-fields: baz
+  boolean-fields: barbaz
+
