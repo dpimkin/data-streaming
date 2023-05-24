@@ -1,0 +1,12 @@
+spring:
+  main:
+    banner-mode: off
+  application:
+    name: db-proc
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/test
+
+
+dataset:
+  coll: some
