@@ -23,7 +23,7 @@ public class DatasetGeneratorClient {
     int bufferSize;
 
     public Flux<byte[]> fetchDataset(long size) {
-        return webClient.post().uri("dataset/" + size)
+        return webClient.post().uri("dataset/predefined")
                 .accept(APPLICATION_JSON)
                 .retrieve()
                 .bodyToFlux(byte[].class)

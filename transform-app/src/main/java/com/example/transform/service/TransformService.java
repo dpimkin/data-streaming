@@ -7,12 +7,12 @@ import com.fasterxml.jackson.core.JsonToken;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
-import org.apache.avro.file.CodecFactory;
-import org.apache.avro.file.DataFileWriter;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.io.DatumWriter;
+import org.apache.avro.generic.GenericRecordBuilder;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.hadoop.ParquetWriter;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
+import static org.apache.parquet.hadoop.ParquetFileWriter.Mode.OVERWRITE;
+import static org.apache.parquet.hadoop.metadata.CompressionCodecName.SNAPPY;
 
 
 /**
@@ -76,30 +78,37 @@ public class TransformService {
         File file = File.createTempFile("req-" + UUID.randomUUID().toString(), ".avro");
         final AtomicBoolean forTheFirstTime = new AtomicBoolean();
         var schemaRef = new AtomicReference<Schema>();
-        var datumWriterRef = new AtomicReference<DatumWriter<GenericRecord>>();
-        var dataFileWriterRef = new AtomicReference<DataFileWriter<GenericRecord>>();
+        var writerRef = new AtomicReference<ParquetWriter<GenericRecord>>();
         var result = parse(is, (cols, object) -> {
             try {
                 if (!forTheFirstTime.get()) {
                     var textSchema = schemaService.generateSchema(cols);
                     var schema = new Schema.Parser().parse(textSchema);
                     schemaRef.set(schema);
-                    GenericDatumWriter<GenericRecord> datumWriter = new GenericDatumWriter<>(schema);
-                    datumWriterRef.set(datumWriter);
-                    CodecFactory cf = CodecFactory.snappyCodec();
-                    dataFileWriterRef.set(new DataFileWriter<>(datumWriter).setCodec(cf));
-                    dataFileWriterRef.get().create(schema, file);
+                    Configuration configuration = new Configuration();
+                    Path path = new Path(file.getAbsolutePath());
+
+                    ParquetWriter<GenericRecord> writer = AvroParquetWriter
+                            .<GenericRecord>builder(path)
+                            .withWriteMode(OVERWRITE)
+                            .withSchema(schema)
+                            .withCompressionCodec(SNAPPY)
+                            .withConf(configuration)
+                            .build();
+                    writerRef.set(writer);
                     forTheFirstTime.set(true);
                 }
-                var entryRecord = new GenericData.Record(schemaRef.get());
-                object.props().forEach(entryRecord::put);
-                dataFileWriterRef.get().append(entryRecord);
+
+                var builder = new GenericRecordBuilder(schemaRef.get());
+                object.props().forEach(builder::set);
+                var genericRecord = builder.build();
+                writerRef.get().write(genericRecord);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
         try {
-            dataFileWriterRef.get().close();
+            writerRef.get().close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

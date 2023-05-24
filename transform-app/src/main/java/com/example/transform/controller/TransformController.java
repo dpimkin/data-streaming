@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -75,7 +74,7 @@ public class TransformController {
 
 
             Flux<byte[]> fileFlux = Flux.create(sink -> {
-                byte[] buffer = new byte[transformBufferSize]; // Adjust buffer size as needed
+                byte[] buffer = new byte[transformBufferSize];
                 try (InputStream inputStream = new BufferedInputStream(new FileInputStream(result.file()))) {
                     int bytesRead;
                     while ((bytesRead = inputStream.read(buffer)) != -1) {

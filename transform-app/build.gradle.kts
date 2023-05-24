@@ -21,8 +21,10 @@ repositories {
 dependencies {
 
 	implementation("io.netty:netty-all") // TODO remove for GraalVM
-	implementation("org.apache.avro:avro:1.11.1")
-	implementation("org.xerial.snappy:snappy-java:1.1.9.1")
+	//implementation("org.apache.avro:avro:1.11.1")
+	implementation("org.apache.parquet:parquet-avro:1.13.0")
+	implementation("org.apache.hadoop:hadoop-client:3.2.1")
+	//implementation("org.xerial.snappy:snappy-java:1.1.9.1")
 
 
 
