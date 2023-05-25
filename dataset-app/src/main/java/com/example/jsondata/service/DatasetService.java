@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
 
 import static com.example.jsondata.service.DatasetMetadata.TIMESTAMP_FORMAT;
@@ -47,6 +48,7 @@ public class DatasetService {
         var start = LocalDateTime.now();
         var formatter = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT);
         var generatedEntries = new AtomicLong(0L);
+        var counter = new LongAdder();
 
         return Flux.fromStream(Stream.generate(() -> {
             try {
@@ -83,22 +85,33 @@ public class DatasetService {
 
 
                 if (!first && !last) {
-                    return writer + ",";
+                    var result = writer + ",";
+                    counter.add(result.length());
+                    log.info("generated {} KB", counter.longValue() / 1024);
+                    return result;
                 } else if (first) {
-                    return "{\n" +
+                    var result = "{\n" +
                             "  \"Response\": {\n" +
                             "    \"pricingLineList\": [" + writer + ",";
+                    counter.add(result.length());
+                    log.info("generated {} KB", counter.longValue() / 1024);
+                    return result;
+
                 } else {
-                    return writer + "]\n" +
+                    var result = writer + "]\n" +
                             "  },\n" +
                             "  \"MetaData\": " +
                             objectMapper.writeValueAsString(MetadataDTO.random()) +
                             ",\n" +
                             "  \"RequestTime\": \"" + formatter.format(start) + "\",\n" +
-                            "  \"ResponseTime\": \""+"\",\n" +
+                            "  \"ResponseTime\": \"" + "\",\n" +
                             "  \"ErrorCode\": \"\",\n" +
                             "  \"ErrorMessage\": \"\"\n" +
                             "}";
+                    counter.add(result.length());
+                    log.info("generated {} KB", counter.longValue() / 1024);
+                    return result;
+
                 }
             } catch (IOException ioe) {
                 throw new UncheckedIOException(ioe);

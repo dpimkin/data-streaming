@@ -13,6 +13,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.hadoop.ParquetWriter;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -22,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
@@ -74,13 +76,17 @@ public class TransformService {
      * @return The TransformationResult object containing the schema, parse count, and file.
      * @throws IOException If an I/O error occurs during parsing or writing to the parquet file.
      */
-    public TransformationResult parse(InputStream is) throws IOException {
-        File file = File.createTempFile("req-" + UUID.randomUUID().toString(), ".avro");
+    public TransformationResult parse(InputStream is, CompressionCodecName codec) throws IOException {
+        File file = File.createTempFile("req-" + UUID.randomUUID(), ".avro");
         final AtomicBoolean forTheFirstTime = new AtomicBoolean();
+        final AtomicLong counter = new AtomicLong(0);
         var schemaRef = new AtomicReference<Schema>();
         var writerRef = new AtomicReference<ParquetWriter<GenericRecord>>();
         var result = parse(is, (cols, object) -> {
             try {
+                if (counter.incrementAndGet() % 6144 == 0) {
+                    log.info("{}", counter.get());
+                }
                 if (!forTheFirstTime.get()) {
                     var textSchema = schemaService.generateSchema(cols);
                     var schema = new Schema.Parser().parse(textSchema);
@@ -92,7 +98,7 @@ public class TransformService {
                             .<GenericRecord>builder(path)
                             .withWriteMode(OVERWRITE)
                             .withSchema(schema)
-                            .withCompressionCodec(SNAPPY)
+                            .withCompressionCodec(codec)
                             .withConf(configuration)
                             .build();
                     writerRef.set(writer);

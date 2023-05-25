@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.buffer.DataBufferFactory;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.concurrent.ExecutorService;
@@ -32,7 +34,6 @@ public class App {
 				.build();
 	}
 
-
 	@Bean
 	JsonFactory jsonFactory() {
 		return new JsonFactory();
@@ -42,5 +43,11 @@ public class App {
 	@Qualifier(ASYNC)
 	ExecutorService executorService() {
 		return Executors.newCachedThreadPool();
+	}
+
+
+	@Bean
+	DataBufferFactory dataBufferFactory() {
+		return new DefaultDataBufferFactory();
 	}
 }

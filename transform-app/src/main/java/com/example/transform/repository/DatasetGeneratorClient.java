@@ -4,11 +4,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import static com.example.transform.Beans.JSON_DATA;
+import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @Slf4j
@@ -22,12 +26,20 @@ public class DatasetGeneratorClient {
     @Value("${client.buffer-size}")
     int bufferSize;
 
-    public Flux<byte[]> fetchDataset(long size) {
-        return webClient.post().uri("dataset/predefined")
+    public Flux<byte[]> fetchDataset(long size, Flux<DataBuffer> fileContentFlux) {
+        var s1 = webClient.post().uri("generate/dataset/" + size)
+                .contentType(APPLICATION_JSON)
                 .accept(APPLICATION_JSON)
+                .body(BodyInserters.fromPublisher(fileContentFlux.doOnNext(str -> log.info("web-client-sent {}", str.readableByteCount())), DataBuffer.class))
                 .retrieve()
-                .bodyToFlux(byte[].class)
-                .buffer(bufferSize)
-                .flatMap(Flux::fromIterable);
+                .onStatus(
+                        httpStatusCode -> httpStatusCode != OK,
+                        clientResponse -> Mono.error(new IllegalStateException("omg")))
+                .bodyToFlux(byte[].class);
+
+        return s1;
     }
+
+
+
 }
